@@ -100,7 +100,7 @@
 
       const loadingChartName = `marshall_maximizer`;
       loadFlag.wait("chartUploader", () => {
-        chart.upload(`rhythm-test-3/js/score/${loadingChartName}.js`, null);
+        chart.upload(`https://sunnybluesky.github.io/rhythm-test-3/js/score/${loadingChartName}.js`, null);
         loadFlag.wait("compChartUpload", () => {
           notesMap = chart.getData(loadingChartName);
           console.log(
