@@ -1,0 +1,111 @@
+:root {
+  --window-height: calc(100% + 0px;);
+  --score-height: calc(1000px - 100px);
+  --touch-zone-height: 50px;
+  --touch-zone-color: rgba(0, 159, 207, 0.8);
+  --touch-zone-touched-color: rgb(0, 159, 207);
+  --notmal-note-color: rgb(0, 180, 24);
+  --long-note-color: rgb(0, 121, 235);
+  --touch-position-y: 500px;
+}
+html {
+  height: 100%;
+  margin: 0px;
+}
+body {
+  height: 100%;
+  margin: 0px;
+  background: url("img/stage.png");
+  background-color: rgba(30, 43, 75, 0.8);
+  background-blend-mode: darken;
+  color: aliceblue;
+  display: flex;
+}
+main {
+  overflow: hidden;
+  height: 100%;
+  width: 600px;
+}
+.main-frame {
+  display: flex;
+  width: 600px;
+  height: 100%;
+  /*overflow:hidden;*/
+  position: block;
+  transform: translateY((100% - var(--score-height)));
+}
+.main-frame > div {
+  width: 150px;
+  height: 100%;
+
+  border: 3px solid rgba(187, 187, 187, 0.5);
+}
+.note {
+  z-index: -99999;
+  height: 50px;
+  display: block;
+  position: fixed;
+  opacity: 0.8;
+}
+.normal {
+  width: 150px;
+  background-color: var(--notmal-note-color);
+}
+.long {
+  width: 150px;
+  background-color: var(--long-note-color);
+}
+#judge-message-frame {
+  position: fixed;
+  left: 250px;
+  text-align: center;
+  width: 150px;
+  transform: translateY(calc(var(--touch-position-y) - 140px));
+}
+#judge-message > #m-body {
+  font-size: 10px;
+  animation: judge-popup 132ms forwards;
+}
+#touch-zone {
+  width: calc(600px - 3px * 2);
+  position: fixed;
+  height: var(--touch-zone-height);
+  transform: translateY(
+    calc(var(--touch-position-y) - (var(--touch-zone-height) / 2))
+  );
+  /*500 - (ノーツの大きさ÷2) */
+  border: 3px solid var(--touch-zone-color);
+  display: flex;
+}
+.touch-zone-keys {
+  width: 150px;
+  z-index: 99999;
+  background-color: var(--touch-zone-color);
+  opacity: 0.3;
+  line-height: var(--touch-zone-height);
+  text-align: center;
+}
+.touch-zone-keys > span {
+  font-size: 20px;
+  opacity: 2;
+}
+textarea {
+  width: 200px;
+  height: 500px;
+  background: rgba(30, 43, 75, 0.8);
+  color: aliceblue;
+}
+
+@keyframes judge-popup {
+  0% {
+    font-size: 10px;
+  }
+  100% {
+    font-size: 30px;
+  }
+}
+
+#side-contents-container {
+  overflow-y: scroll;
+  max-height: 100%;
+}

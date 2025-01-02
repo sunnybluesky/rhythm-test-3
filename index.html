@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>Rhythm</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <div id="touch-zone">
+        <!-- <div class="touch-zone-keys" id="key-s"><span>S</span></div> -->
+        <div class="touch-zone-keys" id="key-d"><span>D</span></div>
+        <div class="touch-zone-keys" id="key-f"><span>F</span></div>
+        <div class="touch-zone-keys" id="key-j"><span>J</span></div>
+        <div class="touch-zone-keys" id="key-k"><span>K</span></div>
+        <!-- <div class="touch-zone-keys" id="key-l"><span>L</span></div> -->
+      </div>
+      <div id="judge-message-frame">
+        <center>
+          <span id="judge-message"><span id="m-body"></span></span>
+        </center>
+      </div>
+      <div class="main-frame">
+        <div id="line0"><div class=""></div></div>
+        <div id="line1"></div>
+        <div id="line2"></div>
+        <div id="line3"></div>
+        <!--<div id="line4"></div>-->
+        <!--<div id="line5"></div>-->
+      </div>
+    </main>
+    <div id="side-contents-container">
+      <textarea></textarea>
+      <h1 id="conbo"></h1>
+      <span id="details"> </span>
+      <h1>Credit</h1>
+      <p>Background:AIPICT</p>
+    </div>
+    <div class="monitor">
+      <p>Time</p>
+      <span id="stopwatch-time"></span>
+    </div>
+    <script src="js/key.js"></script>
+    <script>
+      /*
+        用語（ほぼ英訳）
+        譜面　　chart
+        ノーツ　note / notes
+        列　　　line
+        属性　　attribute → attr
+      */
+
+      const judgeCount = {
+        bad: 0,
+        miss: 0,
+        good: 0,
+        great: 0,
+        perfect: 0,
+      };
+
+      let startFlg = false;
+      let startTime = null;
+      const fps = 60;
+      let notesData = [];
+      let baseBpm = 190;
+      let bpm = baseBpm * 4;
+      let wholeBeats = 0;
+      let conbo = 0;
+      let sec = 0;
+
+      const notesWidth = 50;
+      const touchY = 500;
+
+      let fallSpeed = 1000; // 1秒間(fps)に動くピクセル数
+      let fallSpeedPerBeat = fallSpeed * (60 / baseBpm);
+      let nowNotes = [];
+
+      let judgeList = [""];
+
+      var toleranceErrorFrames = fps / 5 - bpm / 120; //1秒÷5
+      let notesMap = [];
+
+      const loadFlag = {
+        wait: function (target, callback) {
+          var loop = setInterval(() => {
+            if (this[target]) {
+              console.log(`${target} is loaded`);
+              clearInterval(loop);
+              callback();
+            }
+          }, 1000 / 60);
+        },
+        chartUploader: false,
+        compChartUpload: false,
+      };
+
+      let eventList = [[0, "tempo", bpm]];
+      //eventList.push([10, "pause", 1000]);//1秒一時停止
+      let timingList;
+
+      const loadingChartName = `marshall_maximizer`;
+      loadFlag.wait("chartUploader", () => {
+        chart.upload(`/js/score/${loadingChartName}.js`, null);
+        loadFlag.wait("compChartUpload", () => {
+          notesMap = chart.getData(loadingChartName);
+          console.log(
+            `%c${loadingChartName} is completed loading.`,
+            "color:cyan;"
+          );
+          timingList = initTimingList(1000);
+          initNotes(notesMap);
+          plintLog(`読み込み完了：${loadingChartName}`);
+        });
+      });
+
+      //親クラス
+      class chartObject {
+        type = {
+          base: null,
+          attr: [],
+        };
+        y = 0;
+        initialY = 0;
+        el = null;
+        beats = 0;
+        lineNumber = 0;
+        lineElement = null;
+        isAppend = false;
+
+        constructor(type, line, beats) {
+          this.type = type;
+          this.beats = beats;
+          this.lineNumber = line;
+          this.lineElement = document.querySelector(`#line${line}`);
+          this.el = document.createElement("div");
+          this.el.style = "display:none;";
+          this.el.classList.add(type.base);
+          for (var attr of type.attr) {
+            this.el.classList.add(attr);
+          }
+        }
+        initPosition = function (n) {
+          this.y = n;
+          this.initialY = n;
+        };
+        setObject = function () {
+          this.lineElement.append(this.el);
+          this.isAppend = true;
+        };
+        refreshPosition = function () {
+          this.y = ((sec - timingList[this.beats]) / 1000) * fallSpeed;
+          this.el.style = `transform:translateY(${
+            1000 - touchY + this.y
+          }px);display:block;`;
+        };
+        deleteElement = function () {
+          this.el.remove();
+        };
+      }
+
+      //子クラス
+      class chartNote extends chartObject {
+        judged = false;
+        missed = false;
+        constructor(attr = ["normal"], line = 0, beats = 0) {
+          var type = {
+            base: "note",
+            attr: attr,
+          };
+          super(type, line, beats);
+        }
+        setNote = function () {
+          this.setObject();
+        };
+        judge = function () {
+          var ms = {
+            perfect: 40,
+            great: 75,
+            good: 90,
+          };
+          if (this.judged) {
+            return 0;
+            //判定が終了している場合は強制終了
+          }
+          const diff = sec - timingList[this.beats];
+          const diffAbs = Math.abs(diff);
+          const isFast = diff < 0 ? true : false;
+
+          let tempKeystatus;
+          const keyStatus = [];
+          if (
+            this.type.attr.includes("middle") ||
+            this.type.attr.includes("last")
+          ) {
+            tempKeystatus = holdKeys;
+            ms = {
+              perfect: 18,
+              great: 0,
+              good: 0,
+            };
+          } else {
+            tempKeystatus = keys;
+          }
+          keyStatus.push(tempKeystatus.d);
+          keyStatus.push(tempKeystatus.f);
+          keyStatus.push(tempKeystatus.j);
+          keyStatus.push(tempKeystatus.k);
+
+          if (keyStatus[this.lineNumber]) {
+            this.judged = true;
+            if (diffAbs < ms.perfect) {
+              addJudgeList("PERFECT", isFast);
+            } else if (diffAbs < ms.great) {
+              addJudgeList("GREAT", isFast);
+            } else if (diffAbs < ms.good) {
+              addJudgeList("GOOD", isFast);
+            } else if (diff > 0) {
+              //それ以降
+              if (this.missed) {
+              } else {
+                addJudgeList("MISS", isFast);
+              }
+              this.missed = true;
+            } else {
+              this.judged = false;
+            }
+            if (this.judged) {
+              this.deleteElement();
+              //削除
+            }
+          } else {
+            if (diff > 90) {
+              if (this.missed) {
+              } else {
+                addJudgeList("MISS", isFast);
+              }
+              if (this.y > 500) {
+                this.judged = true;
+                this.deleteElement();
+              }
+              this.missed = true;
+            }
+          }
+        };
+        addJudgeList = function (str) {
+          var n = judgeList.length;
+          judgeList.push(str);
+          setTimeout(() => {
+            judgeList[n] = "";
+          }, 500);
+        };
+      }
+
+      //notesMapを変換
+      function initNotes(arr) {
+        if (typeof arr == "object") {
+        } else {
+          console.error("initNotesの,arrの型がobjectではありません。");
+          return null;
+        }
+        for (var i = 0; i <= arr.length - 1; i++) {
+          for (var j = 0; j <= arr[i].length - 1; j++) {
+            var temp = null;
+            switch (arr[i][j]) {
+              case 1:
+                notesData.push(new chartNote(["normal"], j, i));
+                break;
+              case 2:
+                notesData.push(new chartNote(["critical", "normal"], j, i));
+                break;
+              case 3:
+                notesData.push(new chartNote(["long", "middle"], j, i));
+                break;
+              default:
+                temp = null;
+                break;
+            }
+          }
+        }
+      }
+
+      function initTimingList(delay) {
+        //例外処理
+        if (typeof eventList != "object" || eventList.length == 0) {
+          eventList = [[0, "tempo", bpm]];
+        }
+        var eventLog = [];
+        //譜面を作成してから実行
+
+        const list = []; //タイミングリスト
+        //イベントリストの整理
+        let tempEventList = [];
+        var count = 0;
+        for (var i = 0; i <= notesMap.length - 1; i++) {
+          var event = null;
+          if (eventList[count] == undefined) {
+          } else {
+            if (eventList[count][0] == i) {
+              event = [eventList[count][1], eventList[count][2]];
+              count++;
+            }
+          }
+          tempEventList.push(event);
+        }
+        eventLog.push(tempEventList);
+        //タイミングリストを生成
+        var tempo = 120;
+        var i = 0;
+        var total = 0;
+        var sec = 0; //ミリ秒
+        for (item of tempEventList) {
+          if (item != null) {
+            var eventValue = item[1];
+            eventLog.push(item);
+            switch (item[0]) {
+              case "tempo":
+                tempo = eventValue;
+                console.log(tempo);
+                break;
+              case "pause":
+                delay += eventValue;
+                break;
+              default:
+                console.error("合致しないイベントです。");
+                break;
+            }
+          } else {
+          }
+          sec = 1000 * (60 / tempo);
+          total += sec;
+          list.push(Math.round(total) + delay);
+          i++;
+        }
+        eventLog.push(list);
+
+        console.log(eventLog);
+        return list;
+      }
+      plintLog(`FPS:${fps}`);
+      plintLog(`BPM:${baseBpm}`);
+      plintLog(`Speed:${fallSpeed}`);
+      plintLog(`許容誤差フレーム数:±${toleranceErrorFrames / 2}フレーム`);
+
+      ////////////////////////////////////////////////////////////////
+      function testPlay() {
+        startTime = new Date();
+        for (var i = 0; i <= notesData.length - 1; i++) {
+          var note = notesData[i];
+          note.setNote();
+          //note.initPosition();
+        }
+        setInterval(() => {
+          wholeBeats = sec * (60 / bpm);
+          for (var i = 0; i <= 50 /*notesData.length*/ - 1; i++) {
+            var note = notesData[i];
+            note.refreshPosition();
+            note.judge();
+            if (note.judged) {
+              notesData[i] = null;
+              notesData.splice(i, 1);
+            }
+          }
+          notesData.forEach((item, index) => {
+            if (item === null) {
+              notesData.splice(index, null);
+            }
+          });
+        }, 1000 / fps);
+      }
+
+      function addJudgeList(str, isFast) {
+        var n = judgeList.length;
+        var message = isFast ? "FAST" : "LATE";
+
+        judgeList.push([str, message]);
+        setTimeout(() => {
+          judgeList[n] = "";
+        }, 500);
+        message = str == "PERFECT" ? "" : message;
+        document.querySelector(
+          "#judge-message"
+        ).innerHTML = `<span id="m-body"><font size="2">${message}</font><br>${str}</span>`;
+
+        switch (str) {
+          case "BAD":
+            judgeCount.bad++;
+          case "MISS":
+            judgeCount.miss++;
+            break;
+          case "GOOD":
+            judgeCount.good++;
+            break;
+          case "GREAT":
+            judgeCount.great++;
+          case "PERFECT":
+            judgeCount.perfect++;
+            break;
+        }
+      }
+      function getBPF() {
+        return (1000 / (bpm / 60) / (1000 / fps)) * (fallSpeed / fps);
+      }
+      function checkNoteType(n) {
+        var type = null;
+        switch (n) {
+          case 0:
+            type = null;
+            break;
+          case 1:
+            type = "normal";
+            break;
+          default:
+            type = null;
+            break;
+        }
+        return type;
+      }
+      function playInit() {
+        for (var i = 0; i <= 4; i++) {
+          notesMap.push([0, 0, 0, 0]);
+        }
+        startTime = new Date();
+      }
+      function playFinish() {
+        plintLog("メイン処理終了");
+        startFlg = false;
+      }
+
+      plintLog("Rキーを押して開始");
+      document.addEventListener("keydown", (e) => {
+        if (e.key == "r" && !startFlg) {
+          startFlg = true;
+          plintLog("メイン処理開始");
+          // play(notesMap);
+          testPlay();
+        }
+      });
+
+      function plintLog(str) {
+        document.querySelector("textarea").value += `${str}\n`;
+      }
+      function stop() {
+        var e_time = new Date();
+        if (startTime == null) {
+          alert("開始時間のnull値を検出");
+        } else {
+          var diff = e_time.getTime() - startTime.getTime();
+          console.log("経過時間(ミリ秒):", diff);
+        }
+      }
+      function getTime() {
+        var e_time = new Date();
+        if (startTime == null) {
+          return false;
+        } else {
+          var diff = e_time.getTime() - startTime.getTime();
+          return diff;
+        }
+      }
+
+      setInterval(() => {
+        document.querySelector(
+          "#conbo"
+        ).innerHTML = `${conbo}<span>CONBO</span>`;
+        var str = judgeList[judgeList.length - 1][0];
+        var message = judgeList[judgeList.length - 1][1];
+        str = str == undefined ? "" : str;
+        message = message == undefined ? "" : message;
+        message = str == "PERFECT" ? "" : message;
+        document.querySelector(
+          "#judge-message > #m-body"
+        ).innerHTML = `<font size="2">${message}</font><br>${str}`;
+        document.querySelector("#details").innerHTML = `
+                  PERFECT:${judgeCount.perfect}<br>
+                  GREAT:${judgeCount.great}<br>
+                  GOOD:${judgeCount.good}<br>
+                  MISS:${judgeCount.miss}<br>`;
+        var time = getTime();
+        if (time == false) {
+          time = "-";
+        }
+        document.querySelector("#stopwatch-time").innerHTML = time;
+        sec = time;
+      }, 1000 / fps);
+    </script>
+    <script src="js/score/core.js" id="chart-uploader"></script>
+  </body>
+</html>
