@@ -1110,3 +1110,4 @@ var tempChartData = [
 /* 定型文 */
 chart.list.name.push(tempChartName);
 chart.list.data.push(tempChartData);
+
