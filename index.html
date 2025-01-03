@@ -46,6 +46,7 @@
     </div>
     <script src="js/key.js"></script>
     <script>
+
       /*
         用語（ほぼ英訳）
         譜面　　chart
@@ -83,6 +84,8 @@
 
       var toleranceErrorFrames = fps / 5 - bpm / 120; //1秒÷5
       let notesMap = [];
+
+      var audioElement = document.getElementById('player'); 
 
       const loadFlag = {
         wait: function (target, callback) {
@@ -353,6 +356,8 @@
           note.setNote();
           //note.initPosition();
         }
+        audioElement.play()
+
         setInterval(() => {
           wholeBeats = sec * (60 / bpm);
           for (var i = 0; i <= 50 /*notesData.length*/ - 1; i++) {
@@ -453,7 +458,6 @@
         }
       }
       function getTime() {
-        var audioElement = document.getElementById('player'); 
         const duration = audioElement.duration;
         return duration;
       }
