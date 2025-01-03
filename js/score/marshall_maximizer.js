@@ -6635,9 +6635,10 @@ var tempChartData = [
       0,
       2,
       0,
-      0
+      0,
+      "a"
   ]
-];
+]
 /* 定型文 */
 chart.list.name.push(tempChartName);
 chart.list.data.push(tempChartData);
