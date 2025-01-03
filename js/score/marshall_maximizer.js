@@ -1,5 +1,5 @@
 var tempChartName = "marshall_maximizer";
-var tempAudioSrc = `../../audio/${tempChartName}.wav`
+var tempAudioSrc = `audio/${tempChartName}.wav`
 var tempChartData = [
   [0, 0, 0, 0],
   [0, 0, 0, 0],
