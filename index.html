@@ -458,8 +458,9 @@
         }
       }
       function getTime() {
-        const duration = audioElement.currentTime;
-        return duration;
+        var current = audioElement.currentTime;
+        current = Math.floor(current)
+        return current;
       }
 
       setInterval(() => {
