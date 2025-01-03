@@ -458,7 +458,7 @@
         }
       }
       function getTime() {
-        var current = audioElement.currentTime;
+        var current = audioElement.currentTime*1000;
         current = Math.floor(current)
         return current;
       }
