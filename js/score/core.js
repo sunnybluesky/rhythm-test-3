@@ -14,12 +14,16 @@ const chart = {
     document.head.append(el);
     el.addEventListener("load", () => {
       this.list.src.push(src);
-      setTimeout(() => {
-        var index = this.list.name[this.list.src.indexOf(src)];
-        var v = this.getData(index);
-        loadFlag.compChartUpload = true;
-        return v;
-      }, 100);
+      var audioElement = document.getElementById('player'); 
+      audioElement.src = this.list.audioSrc[this.list.src.indexOf(src)]
+      audioElement.addEventListener('canplaythrough', () => {
+        setTimeout(() => {
+          var index = this.list.name[this.list.src.indexOf(src)];
+          var v = this.getData(index);
+          loadFlag.compChartUpload = true;
+          return v;
+        }, 100);
+      })
     });
   },
   getData: function (name) {
@@ -35,5 +39,6 @@ const chart = {
     name: [],
     data: [],
     src: [],
+    audioSrc:[],
   },
 };

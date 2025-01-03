@@ -1,4 +1,5 @@
 var tempChartName = "marshall_maximizer";
+var tempAudioSrc = `../../audio/${tempChartName}.wav`
 var tempChartData = [
   [0, 0, 0, 0],
   [0, 0, 0, 0],
@@ -1110,4 +1111,4 @@ var tempChartData = [
 /* 定型文 */
 chart.list.name.push(tempChartName);
 chart.list.data.push(tempChartData);
-
+chart.list.audioSrc.push(tempAudioSrc);

@@ -42,6 +42,7 @@
       <span id="stopwatch-time"></span>
       <br>
       <button onclick="location.reload()">\Reload</button>
+      <audio id="player"></audio>
     </div>
     <script src="js/key.js"></script>
     <script>
@@ -452,13 +453,9 @@
         }
       }
       function getTime() {
-        var e_time = new Date();
-        if (startTime == null) {
-          return false;
-        } else {
-          var diff = e_time.getTime() - startTime.getTime();
-          return diff;
-        }
+        var audioElement = document.getElementById('player'); 
+        const duration = audioElement.duration;
+        return duration;
       }
 
       setInterval(() => {
