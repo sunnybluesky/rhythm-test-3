@@ -21,28 +21,28 @@ document.addEventListener("keydown", (e) => {
     keys.d = true;
     setTimeout(() => {
       keys.d = false;
-    }, 100);
+    }, 1000/fps*2);
   }
   if (e.key == "f") {
     holdKeys.f = true;
     keys.f = true;
     setTimeout(() => {
       keys.f = false;
-    }, 100);
+    }, 1000/fps*2);
   }
   if (e.key == "j") {
     holdKeys.j = true;
     keys.j = true;
     setTimeout(() => {
       keys.j = false;
-    }, 100);
+    }, 1000/fps*2);
   }
   if (e.key == "k") {
     holdKeys.k = true;
     keys.k = true;
     setTimeout(() => {
       keys.k = false;
-    }, 100);
+    }, 1000/fps*2);
   }
   //  if(e.key == "l"){keys.l = true;setTimeout(() => {keys.l=false}, 100);}
   // if(e.key == "s"){keys.s = true;setTimeout(() => {keys.s=false}, 100);}
