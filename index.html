@@ -41,9 +41,12 @@
       <span id="stopwatch-time"></span>
       <br>
       <button onclick="location.reload()">\Reload</button>
-      <br><br>
-      <h1>player</h1>
-      <audio id="player" controls></audio>
+      <audio id="player"></audio>
+    </div>
+    <div class="template">
+      <div class="effect">
+        <div class="bar-line"></div>
+      </div>
     </div>
     <script src="js/key.js"></script>
     <script>
@@ -63,6 +66,7 @@
         great: 0,
         perfect: 0,
       };
+
 
       let startFlg = false;
       let startTime = null;
@@ -120,10 +124,16 @@
             "color:cyan;"
           );
           timingList = initTimingList(1000);
+          convertLongNotes()
           initNotes(notesMap);
           plintLog(`読み込み完了：${loadingChartName}`);
         });
       });
+
+      const effectElements = {
+        barLine:document.querySelector(".template > .effect > .bar-line")
+      }
+
 
       //親クラス
       class chartObject {
@@ -202,7 +212,7 @@
           const keyStatus = [];
           if (
             this.type.attr.includes("middle") ||
-            this.type.attr.includes("last")
+            this.type.attr.includes("end")
           ) {
             tempKeystatus = holdKeys;
             ms = {
@@ -262,6 +272,32 @@
           }, 500);
         };
       }
+      //ロングノーツを変換(始点=4,中点=3,終点=5)
+      function convertLongNotes(){
+        var arr = [[],[],[],[]]
+        for(var i=0;i<=notesMap.length-1;i++){
+          for(var j=0;j<=arr.length-1;j++){
+            arr[j].push(notesMap[i][j])
+          }
+        }
+
+        for(var i=0;i<=arr.length-1;i++){
+          var flg = false;//ロングノーツか
+          for(var j=0;j<=arr[0].length-1;j++){
+            if(flg){
+              if(arr[i][j] == 3 && arr[i][j+1] != 3){
+                notesMap[j][i] = 5
+                flg = false
+              }
+            }else{
+              if(arr[i][j] == 3){
+                notesMap[j][i] = 4
+                flg = true
+              }
+            }
+          }
+        }
+      }
 
       //notesMapを変換
       function initNotes(arr) {
@@ -281,8 +317,14 @@
                 notesData.push(new chartNote(["critical", "normal"], j, i));
                 break;
               case 3:
-                notesData.push(new chartNote(["long", "middle"], j, i));
-                break;
+              notesData.push(new chartNote(["long", "middle"], j, i));
+              break;
+              case 4:
+              notesData.push(new chartNote(["long", "start"], j, i));
+              break;
+              case 5:
+              notesData.push(new chartNote(["long", "end"], j, i));
+              break;
               default:
                 temp = null;
                 break;
@@ -345,7 +387,6 @@
         }
         eventLog.push(list);
 
-        console.log(eventLog);
         return list;
       }
       plintLog(`FPS:${fps}`);
@@ -468,10 +509,7 @@
         return current;
       }
 
-      setInterval(() => {
-        document.querySelector(
-          "#conbo"
-        ).innerHTML = `${conbo}<span>CONBO</span>`;
+      function updateUI(){
         var str = judgeList[judgeList.length - 1][0];
         var message = judgeList[judgeList.length - 1][1];
         str = str == undefined ? "" : str;
@@ -480,17 +518,27 @@
         document.querySelector(
           "#judge-message > #m-body"
         ).innerHTML = `<font size="2">${message}</font><br>${str}`;
+      }
+      function updateMonitor(){
+        var time = getTime();
+        if (time == false) {
+          time = 0;
+        }
+        sec = time; 
+        document.querySelector("#stopwatch-time").innerHTML = time;
+        document.querySelector(
+          "#conbo"
+        ).innerHTML = `${conbo}<span>CONBO</span>`;
         document.querySelector("#details").innerHTML = `
                   PERFECT:${judgeCount.perfect}<br>
                   GREAT:${judgeCount.great}<br>
                   GOOD:${judgeCount.good}<br>
-                  MISS:${judgeCount.miss}<br>`;
-        var time = getTime();
-        if (time == false) {
-          time = "-";
-        }
-        document.querySelector("#stopwatch-time").innerHTML = time;
-        sec = time;
+                  MISS:${judgeCount.miss}<br>`;       
+
+      }
+      setInterval(() => {
+        updateUI()
+        updateMonitor()
       }, 1000 / fps);
     </script>
     <script src="js/score/core.js" id="chart-uploader"></script>

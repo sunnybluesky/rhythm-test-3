@@ -2,11 +2,12 @@
   --window-height: calc(100% + 0px;);
   --score-height: calc(1000px - 100px);
   --touch-zone-height: 50px;
-  --touch-zone-color: rgba(0, 159, 207, 0.8);
+  --touch-zone-color: rgba(0, 159, 207, 0.5);
   --touch-zone-touched-color: rgb(0, 159, 207);
   --notmal-note-color: rgb(0, 180, 24);
   --long-note-color: rgb(0, 121, 235);
   --touch-position-y: 500px;
+  
 }
 html {
   height: 100%;
@@ -25,6 +26,9 @@ main {
   overflow: hidden;
   height: 100%;
   width: 600px;
+}
+.template{
+  display:none;
 }
 .main-frame {
   display: flex;
@@ -54,6 +58,9 @@ main {
 .long {
   width: 150px;
   background-color: var(--long-note-color);
+}
+.middle{
+  opacity:0.2;
 }
 #judge-message-frame {
   position: fixed;
