@@ -1,546 +1,653 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <title>MUSICANIA(β)</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main>
-      <div id="touch-zone">
-        <!-- <div class="touch-zone-keys" id="key-s"><span>S</span></div> -->
-        <div class="touch-zone-keys" id="key-d"><span>D</span></div>
-        <div class="touch-zone-keys" id="key-f"><span>F</span></div>
-        <div class="touch-zone-keys" id="key-j"><span>J</span></div>
-        <div class="touch-zone-keys" id="key-k"><span>K</span></div>
-        <!-- <div class="touch-zone-keys" id="key-l"><span>L</span></div> -->
-      </div>
-      <div id="judge-message-frame">
-        <center>
-          <span id="judge-message"><span id="m-body"></span></span>
-        </center>
-      </div>
-      <div class="main-frame">
-        <div id="line0"><div class=""></div></div>
-        <div id="line1"></div>
-        <div id="line2"></div>
-        <div id="line3"></div>
-        <!--<div id="line4"></div>-->
-        <!--<div id="line5"></div>-->
-      </div>
-    </main>
-    <div id="side-contents-container">
-      <textarea></textarea>
-      <h1 id="conbo"></h1>
-      <span id="details"> </span>
-      <h1>Credit</h1>
-      <p>Background:AIPICT</p>
+<head> 
+  <title>MUSICANIA(β)</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main>
+    <div id="touch-zone">
+      <!-- <div class="touch-zone-keys" id="key-s"><span>S</span></div> -->
+      <div class="touch-zone-keys" id="key-d"><span>D</span></div>
+      <div class="touch-zone-keys" id="key-f"><span>F</span></div>
+      <div class="touch-zone-keys" id="key-j"><span>J</span></div>
+      <div class="touch-zone-keys" id="key-k"><span>K</span></div>
+      <!-- <div class="touch-zone-keys" id="key-l"><span>L</span></div> -->
     </div>
-    <div class="monitor">
-      <p>Time</p>
-      <span id="stopwatch-time"></span>
-      <br>
-      <button onclick="location.reload()">\Reload</button>
-      <audio id="player"></audio>
+    <div id="judge-message-frame">
+      <center>
+        <span id="judge-message"><span id="m-body"></span></span>
+      </center>
     </div>
-    <div class="template">
-      <div class="effect">
-        <div class="bar-line"></div>
+    <div class="main-frame">
+      <div id="line0" class="line">
+        <div></div>
       </div>
+      <div id="line1" class="line"></div>
+      <div id="line2" class="line"></div>
+      <div id="line3" class="line"></div>
+      <!--<div id="line4"></div>-->
+      <!--<div id="line5"></div>-->
     </div>
-    <script src="js/key.js"></script>
-    <script>
+  </main>
+  <div id="side-contents-container">
+    <textarea></textarea>
+    <h1 id="combo"></h1>
+    <span id="details"> </span>
+    <h1>Credit</h1>
+    <p>Background:AIPICT</p>
+    <p>Logo:Font Meme</p>
+  </div>
+  <div class="monitor">
+    <p>Time</p>
+    <span id="stopwatch-time"></span>
+    <br>
+    <button onclick="location.reload()">Reload</button>
+    <audio id="player"></audio>
+  </div>
+  <div class="template">
+    <div class="effect">
+      <div class="bar-line"></div>
+    </div>
+  </div>
+  <script src="js/key.js"></script>
+  <script>
 
-      /*
-        用語（ほぼ英訳）
-        譜面　　chart
-        ノーツ　note / notes
-        列　　　line
-        属性　　attribute → attr
-      */
+    /*
+      用語（ほぼ英訳）
+      譜面　　chart
+      ノーツ　note / notes
+      列　　　line
+      属性　　attribute → attr
+    */
 
-      const judgeCount = {
-        bad: 0,
-        miss: 0,
-        good: 0,
-        great: 0,
-        perfect: 0,
-      };
+    const judgeCount = {
+      bad: 0,
+      miss: 0,
+      good: 0,
+      great: 0,
+      perfect: 0,
+    };
 
 
-      let startFlg = false;
-      let startTime = null;
-      const fps = 60;
-      let notesData = [];
-      let baseBpm = 190;
-      let bpm = baseBpm * 4;
-      let wholeBeats = 0;
-      let conbo = 0;
-      let sec = 0;
+    let startFlg = false;
+    let startTime = null;
+    const fps = 60;
+    let notesData = [];
+    let baseBpm = 190;
+    let bpm = baseBpm * 4;
+    let wholeBeats = 0;
+    let combo = 0;
+    let sec = 0;
 
-      const notesWidth = 50;
-      const touchY = 500;
+    const notesWidth = 50;
+    const touchY = 500;
 
-      let fallSpeed = 1000; // 1秒間(fps)に動くピクセル数
-      let fallSpeedPerBeat = fallSpeed * (60 / baseBpm);
-      let nowNotes = [];
+    let fallSpeed = 1000; // 1秒間(fps)に動くピクセル数
+    let fallSpeedPerBeat = fallSpeed * (60 / baseBpm);
+    let nowNotes = [];
 
-      let judgeList = [""];
+    let judgeList = [""];
 
-      var toleranceErrorFrames = fps / 5 - bpm / 120; //1秒÷5
-      let notesMap = [];
+    var toleranceErrorFrames = fps / 5 - bpm / 120; //1秒÷5
+    let notesMap = [];
+    let effectsMap = [];
+    let effectsData = []
 
-      var audioElement = document.getElementById('player'); 
+    var audioElement = document.getElementById('player');
 
-      const loadFlag = {
-        wait: function (target, callback) {
-          var loop = setInterval(() => {
-            if (this[target]) {
-              console.log(`${target} is loaded`);
-              clearInterval(loop);
-              callback();
-            }
-          }, 1000 / 60);
-        },
-        chartUploader: false,
-        compChartUpload: false,
-      };
+    const loadFlag = {
+      wait: function (target, callback) {
+        var loop = setInterval(() => {
+          if (this[target]) {
+            console.log(`${target} is loaded`);
+            clearInterval(loop);
+            callback();
+          }
+        }, 1000 / 60);
+      },
+      chartUploader: false,
+      compChartUpload: false,
+    };
 
-      let eventList = [
-        [0, "tempo", bpm],
-        [1, "pause", 700],
-      ];
-      plintLog(eventList.toString())
-      //eventList.push([10, "pause", 1000]);//1秒一時停止
-      let timingList;
+    let eventList = [
+      [0, "tempo", bpm],
+      [1, "pause", 700],
+    ];
+    plintLog(eventList.toString())
+    //eventList.push([10, "pause", 1000]);//1秒一時停止
+    let timingList;
 
-      const loadingChartName = `marshall_maximizer`;
-      loadFlag.wait("chartUploader", () => {
-        chart.upload(`https://sunnybluesky.github.io/rhythm-test-3/js/score/${loadingChartName}.js`, null);
-        loadFlag.wait("compChartUpload", () => {
-          notesMap = chart.getData(loadingChartName);
-          console.log(
-            `%c${loadingChartName} is completed loading.`,
-            "color:cyan;"
-          );
-          timingList = initTimingList(1000);
-          convertLongNotes()
-          initNotes(notesMap);
-          plintLog(`読み込み完了：${loadingChartName}`);
-        });
+    const loadingChartName = `marshall_maximizer`;
+    loadFlag.wait("chartUploader", () => {
+      chart.upload(`https://sunnybluesky.github.io/rhythm-test-3/js/score/${loadingChartName}.js`, null);
+      loadFlag.wait("compChartUpload", () => {
+        notesMap = chart.getData(loadingChartName);
+        console.log(
+          `%c${loadingChartName} is completed loading.`,
+          "color:cyan;"
+        );
+        timingList = initTimingList(1000);
+        convertLongNotes()
+        initNotes(notesMap);
+        plintLog(`読み込み完了：${loadingChartName}`);
       });
+    });
 
-      const effectElements = {
-        barLine:document.querySelector(".template > .effect > .bar-line")
-      }
+    const effectElements = {
+      barLine: document.querySelector(".template > .effect > .bar-line")
+    }
 
 
-      //親クラス
-      class chartObject {
-        type = {
-          base: null,
-          attr: [],
-        };
-        y = 0;
-        initialY = 0;
-        el = null;
-        beats = 0;
-        lineNumber = 0;
-        lineElement = null;
-        isAppend = false;
+    //親クラス
+    class chartObject {
+      type = {
+        base: null,
+        attr: [],
+      };
+      y = 0;
+      initialY = 0;
+      el = null;
+      beats = 0;
+      lineNumber = 0;
+      lineElement = null;
+      isAppend = false;
 
-        constructor(type, line, beats) {
-          this.type = type;
-          this.beats = beats;
-          this.lineNumber = line;
-          this.lineElement = document.querySelector(`#line${line}`);
-          this.el = document.createElement("div");
-          this.el.style = "display:none;";
-          this.el.classList.add(type.base);
-          for (var attr of type.attr) {
-            this.el.classList.add(attr);
-          }
+      constructor(type, line, beats) {
+        this.type = type;
+        this.beats = beats;
+        this.lineNumber = line;
+        this.lineElement = document.querySelector(`#line${line}`);
+        this.el = document.createElement("div");
+        this.el.style = "display:none;";
+        this.el.classList.add(type.base);
+        for (var attr of type.attr) {
+          this.el.classList.add(attr);
         }
-        initPosition = function (n) {
-          this.y = n;
-          this.initialY = n;
-        };
-        setObject = function () {
-          this.lineElement.append(this.el);
-          this.isAppend = true;
-        };
-        refreshPosition = function () {
-          this.y = ((sec - timingList[this.beats]) / 1000) * fallSpeed;
-          this.el.style = `transform:translateY(${
-            1000 - touchY + this.y
+      }
+      initPosition = function (n) {
+        this.y = n;
+        this.initialY = n;
+      };
+      setObject = function () {
+        this.lineElement.append(this.el);
+        this.isAppend = true;
+      };
+      setElement = function (el) {
+        this.el = el
+      };
+      refreshPosition = function (n = 0) {
+        this.y = (((sec - timingList[this.beats]) / 1000) * fallSpeed )+n;
+        this.el.style = `transform:translateY(${1000 - touchY + this.y
           }px);display:block;`;
-        };
-        deleteElement = function () {
-          this.el.remove();
-        };
-      }
+      };
+      deleteElement = function () {
+        this.el.remove();
+      };
+    }
 
-      //子クラス
-      class chartNote extends chartObject {
-        judged = false;
-        missed = false;
-        constructor(attr = ["normal"], line = 0, beats = 0) {
-          var type = {
-            base: "note",
-            attr: attr,
+    //子クラス
+    class chartNote extends chartObject {
+      judged = false;
+      missed = false;
+      constructor(attr = ["normal"], line = 0, beats = 0) {
+        var type = {
+          base: "note",
+          attr: attr,
+        };
+        super(type, line, beats);
+      }
+      setNote = function () {
+        this.setObject();
+      };
+      judge = function () {
+        var ms = {
+          perfect: 40,
+          great: 60,
+          good: 75,
+        };
+        if (this.judged) {
+          return 0;
+          //判定が終了している場合は強制終了
+        }
+        const diff = sec - timingList[this.beats];
+        const diffAbs = Math.abs(diff);
+        const isFast = diff < 0 ? true : false;
+
+        let tempKeystatus;
+        const keyStatus = [];
+        if (
+          this.type.attr.includes("middle") ||
+          this.type.attr.includes("end")
+        ) {
+          tempKeystatus = holdKeys;
+          ms = {
+            perfect: 18,
+            great: 0,
+            good: 0,
           };
-          super(type, line, beats);
-        }
-        setNote = function () {
-          this.setObject();
-        };
-        judge = function () {
-          var ms = {
-            perfect: 40,
-            great: 60,
-            good: 75,
-          };
-          if (this.judged) {
-            return 0;
-            //判定が終了している場合は強制終了
-          }
-          const diff = sec - timingList[this.beats];
-          const diffAbs = Math.abs(diff);
-          const isFast = diff < 0 ? true : false;
-
-          let tempKeystatus;
-          const keyStatus = [];
-          if (
-            this.type.attr.includes("middle") ||
-            this.type.attr.includes("end")
-          ) {
-            tempKeystatus = holdKeys;
-            ms = {
-              perfect: 18,
-              great: 0,
-              good: 0,
-            };
-          } else {
-            tempKeystatus = keys;
-          }
-          keyStatus.push(tempKeystatus.d);
-          keyStatus.push(tempKeystatus.f);
-          keyStatus.push(tempKeystatus.j);
-          keyStatus.push(tempKeystatus.k);
-
-          if (keyStatus[this.lineNumber]) {
-            this.judged = true;
-            if (diffAbs < ms.perfect) {
-              addJudgeList("PERFECT", isFast);
-            } else if (diffAbs < ms.great) {
-              addJudgeList("GREAT", isFast);
-            } else if (diffAbs < ms.good) {
-              addJudgeList("GOOD", isFast);
-            } else if (diff > 0) {
-              //それ以降
-              if (this.missed) {
-              } else {
-                addJudgeList("MISS", isFast);
-              }
-              this.missed = true;
-            } else {
-              this.judged = false;
-            }
-            if (this.judged) {
-              this.deleteElement();
-              //削除
-            }
-          } else {
-            if (diff > 90) {
-              if (this.missed) {
-              } else {
-                addJudgeList("MISS", isFast);
-              }
-              if (this.y > 500) {
-                this.judged = true;
-                this.deleteElement();
-              }
-              this.missed = true;
-            }
-          }
-        };
-        addJudgeList = function (str) {
-          var n = judgeList.length;
-          judgeList.push(str);
-          setTimeout(() => {
-            judgeList[n] = "";
-          }, 500);
-        };
-      }
-      //ロングノーツを変換(始点=4,中点=3,終点=5)
-      function convertLongNotes(){
-        var arr = [[],[],[],[]]
-        for(var i=0;i<=notesMap.length-1;i++){
-          for(var j=0;j<=arr.length-1;j++){
-            arr[j].push(notesMap[i][j])
-          }
-        }
-
-        for(var i=0;i<=arr.length-1;i++){
-          var flg = false;//ロングノーツか
-          for(var j=0;j<=arr[0].length-1;j++){
-            if(flg){
-              if(arr[i][j] == 3 && arr[i][j+1] != 3){
-                notesMap[j][i] = 5
-                flg = false
-              }
-            }else{
-              if(arr[i][j] == 3){
-                notesMap[j][i] = 4
-                flg = true
-              }
-            }
-          }
-        }
-      }
-
-      //notesMapを変換
-      function initNotes(arr) {
-        if (typeof arr == "object") {
         } else {
-          console.error("initNotesの,arrの型がobjectではありません。");
-          return null;
+          tempKeystatus = keys;
         }
-        for (var i = 0; i <= arr.length - 1; i++) {
-          for (var j = 0; j <= arr[i].length - 1; j++) {
-            var temp = null;
-            switch (arr[i][j]) {
-              case 1:
-                notesData.push(new chartNote(["normal"], j, i));
-                break;
-              case 2:
-                notesData.push(new chartNote(["critical", "normal"], j, i));
-                break;
-              case 3:
-              notesData.push(new chartNote(["long", "middle"], j, i));
-              break;
-              case 4:
-              notesData.push(new chartNote(["long", "start"], j, i));
-              break;
-              case 5:
-              notesData.push(new chartNote(["long", "end"], j, i));
-              break;
-              default:
-                temp = null;
-                break;
+        keyStatus.push(tempKeystatus.d);
+        keyStatus.push(tempKeystatus.f);
+        keyStatus.push(tempKeystatus.j);
+        keyStatus.push(tempKeystatus.k);
+
+        let isConnectCombo = false
+
+        if (keyStatus[this.lineNumber]) {
+          this.judged = true;
+          if (diffAbs < ms.perfect) {
+            addJudgeList("PERFECT", isFast);
+            isConnectCombo = true
+          } else if (diffAbs < ms.great) {
+            addJudgeList("GREAT", isFast);
+            isConnectCombo = true
+          } else if (diffAbs < ms.good) {
+            addJudgeList("GOOD", isFast);
+            isConnectCombo = true
+          } else if (diff > 0) {
+            //それ以降
+            if (this.missed) {
+            } else {
+              addJudgeList("MISS", isFast);
             }
-          }
-        }
-      }
-
-      function initTimingList(delay) {
-        //例外処理
-        if (typeof eventList != "object" || eventList.length == 0) {
-          eventList = [[0, "tempo", bpm]];
-        }
-        var eventLog = [];
-        //譜面を作成してから実行
-
-        const list = []; //タイミングリスト
-        //イベントリストの整理
-        let tempEventList = [];
-        var count = 0;
-        for (var i = 0; i <= notesMap.length - 1; i++) {
-          var event = null;
-          if (eventList[count] == undefined) {
+            this.missed = true;
           } else {
-            if (eventList[count][0] == i) {
-              event = [eventList[count][1], eventList[count][2]];
-              count++;
-            }
+            this.judged = false;
           }
-          tempEventList.push(event);
-        }
-        eventLog.push(tempEventList);
-        //タイミングリストを生成
-        var tempo = 120;
-        var i = 0;
-        var total = 0;
-        var sec = 0; //ミリ秒
-        for (item of tempEventList) {
-          if (item != null) {
-            var eventValue = item[1];
-            eventLog.push(item);
-            switch (item[0]) {
-              case "tempo":
-                tempo = eventValue;
-                console.log(tempo);
-                break;
-              case "pause":
-                delay += eventValue;
-                break;
-              default:
-                console.error("合致しないイベントです。");
-                break;
+          if (this.judged) {
+            if (isConnectCombo) {
+              combo++
+            } else {
+              combo = 0
             }
-          } else {
+            this.deleteElement();
+            //削除
           }
-          sec = 1000 * (60 / tempo);
-          total += sec;
-          list.push(Math.round(total) + delay);
-          i++;
-        }
-        eventLog.push(list);
-
-        return list;
-      }
-      plintLog(`FPS:${fps}`);
-      plintLog(`BPM:${baseBpm}`);
-      plintLog(`Speed:${fallSpeed}`);
-      plintLog(`許容誤差フレーム数:±${toleranceErrorFrames / 2}フレーム`);
-
-      ////////////////////////////////////////////////////////////////
-      function testPlay() {
-        startTime = new Date();
-        for (var i = 0; i <= notesData.length - 1; i++) {
-          var note = notesData[i];
-          note.setNote();
-          //note.initPosition();
-        }
-        audioElement.play()
-
-        setInterval(() => {
-          wholeBeats = sec * (60 / bpm);
-          for (var i = 0; i <= 50 /*notesData.length*/ - 1; i++) {
-            var note = notesData[i];
-            note.refreshPosition();
-            note.judge();
-            if (note.judged) {
-              notesData[i] = null;
-              notesData.splice(i, 1);
+        } else {
+          if (diff > 90) {
+            if (this.missed) {
+            } else {
+              addJudgeList("MISS", isFast);
             }
+            if (this.y > 500) {
+              this.judged = true;
+              this.deleteElement();
+            }
+            this.missed = true;
           }
-          notesData.forEach((item, index) => {
-            if (item === null) {
-              notesData.splice(index, null);
-            }
-          });
-        }, 1000 / fps);
-      }
-
-      function addJudgeList(str, isFast) {
+        }
+      };
+      addJudgeList = function (str) {
         var n = judgeList.length;
-        var message = isFast ? "FAST" : "LATE";
-
-        judgeList.push([str, message]);
+        judgeList.push(str);
         setTimeout(() => {
           judgeList[n] = "";
         }, 500);
-        message = str == "PERFECT" ? "" : message;
-        document.querySelector(
-          "#judge-message"
-        ).innerHTML = `<span id="m-body"><font size="2">${message}</font><br>${str}</span>`;
-
-        switch (str) {
-          case "BAD":
-            judgeCount.bad++;
-          case "MISS":
-            judgeCount.miss++;
+      };
+    }
+    //効果クラス
+    class chartEffect extends chartObject {
+      isRequestDelete = false
+      constructor(attr = { name: "bar" }, line = 0, beats = 0) {
+        var type = {
+          base: "effect",
+          attr: attr,
+        };
+        super({ base: "effect", attr: [type.attr.name] }, line, beats);
+        this.type.attr = type.attr
+        switch (this.type.attr.name) {
+          case "bar":
+          var el = null
+          el = effectElements.barLine.cloneNode(true)
+          this.setElement(el)
             break;
-          case "GOOD":
-            judgeCount.good++;
-            break;
-          case "GREAT":
-            judgeCount.great++;
-          case "PERFECT":
-            judgeCount.perfect++;
-            break;
-        }
-      }
-      function getBPF() {
-        return (1000 / (bpm / 60) / (1000 / fps)) * (fallSpeed / fps);
-      }
-      function checkNoteType(n) {
-        var type = null;
-        switch (n) {
-          case 0:
-            type = null;
-            break;
-          case 1:
-            type = "normal";
+          case "long-middle-front":
             break;
           default:
-            type = null;
-            break;
+            console.error("意図しない値です。")
+
         }
-        return type;
-      }
-      function playInit() {
-        for (var i = 0; i <= 4; i++) {
-          notesMap.push([0, 0, 0, 0]);
+      };
+      check = function(){
+        var n = 0
+        if(this.type.attr.name == "long-middle-front"){
+          n-=this.type.attr.len
         }
-        startTime = new Date();
+        if((this.y + n) > 500){
+          this.isRequestDelete = true
+        }
+      };
+      updateHeight = function(){
+        if(this.type.attr.name == "long-middle-front"){
+        var n = this.type.attr.len
+        this.refreshPosition(n*(-1))
+
+        this.el.style.height = `${n}px`
       }
-      function playFinish() {
-        plintLog("メイン処理終了");
-        startFlg = false;
+    };
+
+    }
+
+
+    //ロングノーツを変換(始点=4,中点=3,終点=5)
+    function convertLongNotes() {
+      effectsMap = []
+      var arr = [[], [], [], []]
+      for (var i = 0; i <= notesMap.length - 1; i++) {
+        for (var j = 0; j <= arr.length - 1; j++) {
+          arr[j].push(notesMap[i][j])
+        }
+        effectsMap.push([null, null, null, null])
+      }
+      var tempEffectsData = []
+      for (var i = 0; i <= arr.length - 1; i++) {
+        var flg = false;//ロングノーツか
+        var flgPoint = 0;
+        for (var j = 0; j <= arr[0].length - 1; j++) {
+          if (flg) {
+            if (arr[i][j] == 3 && arr[i][j + 1] != 3) {
+              notesMap[j][i] = 5
+              flg = false
+              var len = (j - flgPoint) * getBPF()
+              effectsMap[flgPoint][i] = (new chartEffect({ name: "long-middle-front", len: len }, i, flgPoint))
+            }
+          } else {
+            if (arr[i][j] == 3) {
+              flgPoint = j
+              notesMap[j][i] = 4
+              flg = true
+            }
+          }
+        }
       }
 
-      plintLog("Rキーを押して開始");
-      document.addEventListener("keydown", (e) => {
-        if (e.key == "r" && !startFlg) {
-          startFlg = true;
-          plintLog("メイン処理開始");
-          // play(notesMap);
-          testPlay();
-        }
-      });
 
-      function plintLog(str) {
-        document.querySelector("textarea").value += `${str}\n`;
+      for(var i=0;i<=effectsMap.length-1;i++){
+        for(var j=0;j<=effectsMap[i].length-1;j++){
+          if(effectsMap[i][j] != null){
+          effectsData.push(effectsMap[i][j])
+          }
+        }
       }
-      function stop() {
-        var e_time = new Date();
-        if (startTime == null) {
-          alert("開始時間のnull値を検出");
+    }
+
+    //notesMapを変換
+    function initNotes(arr) {
+      if (typeof arr == "object") {
+      } else {
+        console.error("initNotesの,arrの型がobjectではありません。");
+        return null;
+      }
+      for (var i = 0; i <= arr.length - 1; i++) {
+        for (var j = 0; j <= arr[i].length - 1; j++) {
+          var temp = null;
+          switch (arr[i][j]) {
+            case 1:
+              notesData.push(new chartNote(["normal"], j, i));
+              break;
+            case 2:
+              notesData.push(new chartNote(["critical", "normal"], j, i));
+              break;
+            case 3:
+              notesData.push(new chartNote(["long", "middle"], j, i));
+              break;
+            case 4:
+              notesData.push(new chartNote(["long", "start"], j, i));
+              break;
+            case 5:
+              notesData.push(new chartNote(["long", "end"], j, i));
+              break;
+            default:
+              temp = null;
+              break;
+          }
+        }
+      }
+    }
+
+    function initTimingList(delay) {
+      //例外処理
+      if (typeof eventList != "object" || eventList.length == 0) {
+        eventList = [[0, "tempo", bpm]];
+      }
+      var eventLog = [];
+      //譜面を作成してから実行
+
+      const list = []; //タイミングリスト
+      //イベントリストの整理
+      let tempEventList = [];
+      var count = 0;
+      for (var i = 0; i <= notesMap.length - 1; i++) {
+        var event = null;
+        if (eventList[count] == undefined) {
         } else {
-          var diff = e_time.getTime() - startTime.getTime();
-          console.log("経過時間(ミリ秒):", diff);
+          if (eventList[count][0] == i) {
+            event = [eventList[count][1], eventList[count][2]];
+            count++;
+          }
         }
+        tempEventList.push(event);
       }
-      function getTime() {
-        var current = audioElement.currentTime*1000;
-        current = Math.floor(current)
-        return current;
+      eventLog.push(tempEventList);
+      //タイミングリストを生成
+      var tempo = 120;
+      var i = 0;
+      var total = 0;
+      var sec = 0; //ミリ秒
+      for (item of tempEventList) {
+        if (item != null) {
+          var eventValue = item[1];
+          eventLog.push(item);
+          switch (item[0]) {
+            case "tempo":
+              tempo = eventValue;
+              console.log(tempo);
+              break;
+            case "pause":
+              delay += eventValue;
+              break;
+            default:
+              console.error("合致しないイベントです。");
+              break;
+          }
+        } else {
+        }
+        sec = 1000 * (60 / tempo);
+        total += sec;
+        list.push(Math.round(total) + delay);
+        i++;
       }
+      eventLog.push(list);
 
-      function updateUI(){
-        var str = judgeList[judgeList.length - 1][0];
-        var message = judgeList[judgeList.length - 1][1];
-        str = str == undefined ? "" : str;
-        message = message == undefined ? "" : message;
-        message = str == "PERFECT" ? "" : message;
-        document.querySelector(
-          "#judge-message > #m-body"
-        ).innerHTML = `<font size="2">${message}</font><br>${str}`;
+      return list;
+    }
+    plintLog(`FPS:${fps}`);
+    plintLog(`BPM:${baseBpm}`);
+    plintLog(`Speed:${fallSpeed}`);
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    function testPlay() {
+      startTime = new Date();
+      for (var i = 0; i <= notesData.length - 1; i++) {
+        var note = notesData[i];
+        note.setNote();
+        //note.initPosition();
       }
-      function updateMonitor(){
-        var time = getTime();
-        if (time == false) {
-          time = 0;
+      for (var i = 0; i <= effectsData.length - 1; i++) {
+        var effect = effectsData[i];
+        effect.setObject();
+        //note.initPosition();
+      }
+      audioElement.play()
+
+      setInterval(() => {
+        wholeBeats = sec * (60 / bpm);
+        for (var i = 0; i <= 50 /*notesData.length*/ - 1; i++) {
+          var note = notesData[i];
+          if(note == undefined){
+            ;
+          }else{
+          note.refreshPosition();
+          note.judge();
+          if (note.judged) {
+            
+            notesData[i] = null;
+            notesData.splice(i, 1);
+          }
         }
-        sec = time; 
-        document.querySelector("#stopwatch-time").innerHTML = time;
-        document.querySelector(
-          "#conbo"
-        ).innerHTML = `${conbo}<span>CONBO</span>`;
-        document.querySelector("#details").innerHTML = `
+        }
+        for (var i = 0; i <= 20 /*notesData.length*/ - 1; i++) {
+          var effect = effectsData[i];
+          if(effect == undefined){
+            ;
+          }else{
+          effect.refreshPosition();
+          effect.check();
+          effect.updateHeight()
+          if (effect.isRequestDelete) {
+            effect.deleteElement()
+            effectsData[i] = null;
+            effectsData.splice(i, 1);
+          }
+        }
+        }
+        notesData.forEach((item, index) => {
+          if (item === null) {
+            notesData.splice(index, null);
+          }
+        });
+        effectsData.forEach((item, index) => {
+          if (item === null) {
+            effectsData.splice(index, null);
+          }
+        });
+      }, 1000 / fps);
+    }
+
+    function addJudgeList(str, isFast) {
+      var n = judgeList.length;
+      var message = isFast ? "FAST" : "LATE";
+
+      judgeList.push([str, message]);
+      setTimeout(() => {
+        judgeList[n] = "";
+      }, 500);
+      message = str == "PERFECT" ? "" : message;
+      document.querySelector(
+        "#judge-message"
+      ).innerHTML = `<span id="m-body"><font size="2">${message}</font><br>${str}</span>`;
+
+      switch (str) {
+        case "BAD":
+          judgeCount.bad++;
+        case "MISS":
+          judgeCount.miss++;
+          break;
+        case "GOOD":
+          judgeCount.good++;
+          break;
+        case "GREAT":
+          judgeCount.great++;
+        case "PERFECT":
+          judgeCount.perfect++;
+          break;
+      }
+    }
+    function getBPF() {
+      return (1000 / (bpm / 60) / (1000 / fps)) * (fallSpeed / fps);
+    }
+    function checkNoteType(n) {
+      var type = null;
+      switch (n) {
+        case 0:
+          type = null;
+          break;
+        case 1:
+          type = "normal";
+          break;
+        default:
+          type = null;
+          break;
+      }
+      return type;
+    }
+    function playInit() {
+      for (var i = 0; i <= 4; i++) {
+        notesMap.push([0, 0, 0, 0]);
+      }
+      startTime = new Date();
+    }
+    function playFinish() {
+      plintLog("メイン処理終了");
+      startFlg = false;
+    }
+
+    plintLog("Rキーを押して開始");
+    document.addEventListener("keydown", (e) => {
+      if (e.key == "r" && !startFlg) {
+        startFlg = true;
+        plintLog("メイン処理開始");
+        // play(notesMap);
+        testPlay();
+      }
+    });
+
+    function plintLog(str) {
+      document.querySelector("textarea").value += `${str}\n`;
+    }
+    function stop() {
+      var e_time = new Date();
+      if (startTime == null) {
+        alert("開始時間のnull値を検出");
+      } else {
+        var diff = e_time.getTime() - startTime.getTime();
+        console.log("経過時間(ミリ秒):", diff);
+      }
+    }
+    function getTime() {
+      var current = audioElement.currentTime * 1000;
+      current = Math.floor(current)
+      return current;
+    }
+
+    function updateUI() {
+      var str = judgeList[judgeList.length - 1][0];
+      var message = judgeList[judgeList.length - 1][1];
+      str = str == undefined ? "" : str;
+      message = message == undefined ? "" : message;
+      message = str == "PERFECT" ? "" : message;
+      document.querySelector(
+        "#judge-message > #m-body"
+      ).innerHTML = `<font size="2">${message}</font><br>${str}`;
+    }
+    function updateMonitor() {
+      var time = getTime();
+      if (time == false) {
+        time = 0;
+      }
+      sec = time;
+      document.querySelector("#stopwatch-time").innerHTML = time;
+      document.querySelector(
+        "#combo"
+      ).innerHTML = `${combo}<span>COMBO</span>`;
+      document.querySelector("#details").innerHTML = `
                   PERFECT:${judgeCount.perfect}<br>
                   GREAT:${judgeCount.great}<br>
                   GOOD:${judgeCount.good}<br>
-                  MISS:${judgeCount.miss}<br>`;       
+                  MISS:${judgeCount.miss}<br>`;
 
-      }
-      setInterval(() => {
-        updateUI()
-        updateMonitor()
-      }, 1000 / fps);
-    </script>
-    <script src="js/score/core.js" id="chart-uploader"></script>
-  </body>
+    }
+    setInterval(() => {
+      updateUI()
+      updateMonitor()
+    }, 1000 / fps);
+  </script>
+  <script src="js/score/core.js" id="chart-uploader"></script>
+</body>
+
 </html>

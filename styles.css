@@ -4,8 +4,8 @@
   --touch-zone-height: 50px;
   --touch-zone-color: rgba(0, 159, 207, 0.5);
   --touch-zone-touched-color: rgb(0, 159, 207);
-  --notmal-note-color: rgb(0, 180, 24);
-  --long-note-color: rgb(0, 121, 235);
+  --notmal-note-color: rgb(79, 254, 103);
+  --long-note-color:rgb(135,235,255);
   --touch-position-y: 500px;
   
 }
@@ -51,6 +51,11 @@ main {
   position: fixed;
   opacity: 0.8;
 }
+.effect {
+  z-index: -999999;
+  display: block;
+  position: fixed;
+}
 .normal {
   width: 150px;
   background-color: var(--notmal-note-color);
@@ -60,7 +65,16 @@ main {
   background-color: var(--long-note-color);
 }
 .middle{
-  opacity:0.2;
+  opacity:0;
+}
+.long-middle-front{
+  background: rgb(135,235,255);
+  background: linear-gradient(
+  90deg, rgba(135,235,255,0.8) 0%, 
+         rgba(135,235,255,0.2)20%,
+         rgba(135,235,255,0.2) 80%,
+         rgba(135,235,255,0.8) 100%);
+  width:150px;
 }
 #judge-message-frame {
   position: fixed;
