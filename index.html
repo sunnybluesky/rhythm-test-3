@@ -2,11 +2,14 @@
 <html lang="ja">
 <head> 
   <title>MUSICANIA(β)</title>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
+  <div id="canvas-contents-container">
+    <canvas id="canvas"></canvas>
+  </div>
   <main>
     <div id="touch-zone">
       <!-- <div class="touch-zone-keys" id="key-s"><span>S</span></div> -->
@@ -53,6 +56,7 @@
       <div class="bar-line"></div>
     </div>
   </div>
+  <script src="js/canvas.js"></script>
   <script src="js/key.js"></script>
   <script>
 
@@ -161,31 +165,37 @@
         this.beats = beats;
         this.lineNumber = line;
         this.lineElement = document.querySelector(`#line${line}`);
+      /*  
         this.el = document.createElement("div");
         this.el.style = "display:none;";
         this.el.classList.add(type.base);
         for (var attr of type.attr) {
           this.el.classList.add(attr);
         }
+      */
       }
       initPosition = function (n) {
         this.y = n;
         this.initialY = n;
       };
       setObject = function () {
+        /*
         this.lineElement.append(this.el);
         this.isAppend = true;
+        */
       };
       setElement = function (el) {
         this.el = el
       };
       refreshPosition = function (n = 0) {
         this.y = (((sec - timingList[this.beats]) / 1000) * fallSpeed )+n;
+        /*
         this.el.style = `transform:translateY(${1000 - touchY + this.y
           }px);display:block;`;
+        */
       };
       deleteElement = function () {
-        this.el.remove();
+        // this.el.remove();
       };
     }
 
@@ -303,9 +313,11 @@
         this.type.attr = type.attr
         switch (this.type.attr.name) {
           case "bar":
+          /*
           var el = null
           el = effectElements.barLine.cloneNode(true)
           this.setElement(el)
+          */
             break;
           case "long-middle-front":
             break;
@@ -328,7 +340,7 @@
         var n = this.type.attr.len
         this.refreshPosition(n*(-1))
 
-        this.el.style.height = `${n}px`
+      //  this.el.style.height = `${n}px`
       }
     };
 

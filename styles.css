@@ -23,6 +23,9 @@ body {
   display: flex;
 }
 main {
+  /**/
+    display:none;
+  /**/
   overflow: hidden;
   height: 100%;
   width: 600px;
@@ -129,4 +132,9 @@ textarea {
 #side-contents-container {
   overflow-y: scroll;
   max-height: 100%;
+}
+
+#canvas{
+  width:500px;
+  height:500px;
 }
